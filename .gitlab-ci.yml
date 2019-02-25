@@ -1,0 +1,99 @@
+#该模板适用于kubernetes部署的服务
+before_script:
+  #- 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+  - eval $(ssh-agent -s)
+  - ssh-add <(echo "$SSH_PRIVATE_KEY")
+  - mkdir -p ~/.ssh
+  - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+
+variables:
+  #  NAMESPACE：用来指明该项目构建的镜像上传到哪个命名空间中
+  #  使用了命名空间后，项目最终的镜像地址就是 $LOCAL_REPERTORY/$NAMESPACE/$CI_PROJECT_NAME:$TAG
+  #  使用命名空间的好处是可以将同一个项目的各种镜像放到一起集中管理，并且便于识别
+  NAMESPACE: fpi
+  #  KUBERNETES_NAMESPACE: 应用在kubernetes集群中的命名空间
+  KUBERNETES_NAMESPACE: agms-test
+  #  LOCAL_REPERTORY: 本地docker仓库地址，用户名
+  LOCAL_REPERTORY: "docker-lh.fpi-inc.site"
+  LOCAL_REPERTORY_USERNAME: admin
+  #  REMOTE_REPERTORY：阿里云docker仓库地址
+  REMOTE_REPERTORY: "docker.fpi-inc.site"
+  REMOTE_REPERTORY_USERNAME: admin
+  #  KUBERNETES_MASTER_NODE_IP: kubernetes集群的master ip，用来管理应用服务
+  KUBERNETES_MASTER_NODE_IP: 192.168.1.250
+  #  镜像的name和tag,tag以PIPELINE_ID命名
+  IMAGE_TAG_PIPELINE_ID: "$NAMESPACE/$CI_PROJECT_NAME:$CI_PIPELINE_ID"
+  #  镜像的name和tag,tag以COMMIT_SHA命名
+  IMAGE_TAG_COMMIT_SHA: "$NAMESPACE/$CI_PROJECT_NAME:$CI_COMMIT_SHA"
+  #  镜像的name和tag,tag以COMMIT_TAG命名
+  IMAGE_TAG_COMMIT_TAG: "$NAMESPACE/$CI_PROJECT_NAME:$CI_COMMIT_TAG"
+  #  sonarqube token
+  SONAR_LOGIN_TOKEN: 60d38e6a8d2d2fbd79514ca2a085cb6aafe9370a
+  #  完整的升级命令
+  UPDATE_CMD: >
+    kubectl patch deploy $CI_PROJECT_NAME -n $KUBERNETES_NAMESPACE -p
+    '{"spec":{"template":{"spec":{"containers":[{"name":"$CI_PROJECT_NAME","image":"$LOCAL_REPERTORY/$NAMESPACE/$CI_PROJECT_NAME:$CI_PIPELINE_ID"}]}}}}'
+    
+stages:
+  - pre_build
+  - build
+  - auto_test
+  - push
+  - deploy
+
+build_docker_images:
+  stage: build
+  image: docker:stable
+  before_script: []
+  script:
+    - docker build -t $LOCAL_REPERTORY/$IMAGE_TAG_PIPELINE_ID .
+    - docker tag $LOCAL_REPERTORY/$IMAGE_TAG_PIPELINE_ID $LOCAL_REPERTORY/$IMAGE_TAG_COMMIT_SHA
+  only:        
+    - branches  #所有分支触发push时都需要构建
+  except:  
+    - tags   #通常是对已经测试通过的镜像打tag，所以不需要再次编译镜像
+
+push_docker_images_to_local_repertory:
+  stage: push
+  image: docker:stable
+  before_script:
+    - docker login -u $LOCAL_REPERTORY_USERNAME -p $LOCAL_NEXUS_PASSWD http://$LOCAL_REPERTORY
+  script:
+    - docker push $LOCAL_REPERTORY/$IMAGE_TAG_PIPELINE_ID
+    - docker push $LOCAL_REPERTORY/$IMAGE_TAG_COMMIT_SHA
+  only:
+    - master    #只有master、hotfix-分支被推送时才推送镜像到本地仓库，开发分支只构建不推送
+    - /^hotfix-.*$/ 
+
+push_docker_images_to_remote_repertory:
+  stage: push
+  image: docker:stable
+  before_script: []
+  script:
+    - docker login -u $LOCAL_REPERTORY_USERNAME -p $LOCAL_NEXUS_PASSWD http://$LOCAL_REPERTORY
+    - docker pull $LOCAL_REPERTORY/$IMAGE_TAG_COMMIT_SHA   #先从本地仓库下载一次，防止本地镜像被删除，找不到镜像时报错
+    - docker tag  $LOCAL_REPERTORY/$IMAGE_TAG_COMMIT_SHA $LOCAL_REPERTORY/$IMAGE_TAG_COMMIT_TAG  #将代码的TAG名称作为镜像的TAG
+    - docker push $LOCAL_REPERTORY/$IMAGE_TAG_COMMIT_TAG   #push到本地的nexus仓库
+
+    - docker login -u $REMOTE_REPERTORY_USERNAME -p $REMOTE_NEXUS_PASSWD http://$REMOTE_REPERTORY
+    - docker tag  $LOCAL_REPERTORY/$IMAGE_TAG_COMMIT_SHA $REMOTE_REPERTORY/$IMAGE_TAG_COMMIT_SHA
+    - docker tag  $LOCAL_REPERTORY/$IMAGE_TAG_COMMIT_SHA $REMOTE_REPERTORY/$IMAGE_TAG_COMMIT_TAG
+    - docker push $REMOTE_REPERTORY/$IMAGE_TAG_COMMIT_SHA  #以commit的sha为版本号，push到阿里云nexus仓库
+    - docker push $REMOTE_REPERTORY/$IMAGE_TAG_COMMIT_TAG  #以commit的tag为版本号，push到阿里云nexus仓库
+  only:
+    - tags    #只有打tag时才会触发执行（打tag时就意味着要发布到生产环境了）
+
+testing_env_deploy:
+  stage: deploy
+  image: kroniak/ssh-client:3.6
+  script: 
+    - ssh root@$KUBERNETES_MASTER_NODE_IP "$UPDATE_CMD"
+# when: manual
+  environment:
+    name: test
+    url: http://k8s.fpi-inc.site/alarm/web/api/v1/task-list/getAllTaskByCondition
+  only:         #只有当“master”分支被push/merge，或者名称以“hotfix-”开头的分支被push/merge时才会触发执行（ref：分支名、tag名）
+    - master
+    - /^hotfix-.*$/
+  except:
+    - tags    #在打tag时测试环境不发布

@@ -1,0 +1,159 @@
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>菏泽空间插值历史数据服务</title>
+    <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="/static/js/skin/jedate.css">
+    <script src="/static/js/jquery.min.js"></script>
+    <script src="/static/js/jedate.js"></script>
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .container {
+            text-align: center;
+            line-height: 40px;
+            font-size: 16px;
+        }
+        
+        .time {
+            width: 200px;
+            height: 30px;
+            border: 1px #ccc solid;
+        }
+        
+        .desc-title {
+            font-size: 24px;
+            font: bold;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: #4A4A4A;
+        }
+        
+        .type-div {
+            margin-top: 20px;
+        }
+        
+        .select-div {
+            height: 24px;
+        }
+        
+        .time-div {
+            margin-top: 16px;
+        }
+        
+        .process {
+            margin-top: 30px;
+            font-size: 18px;
+        }
+        
+        #submit {
+            margin-right: 24px;
+        }
+        
+        .status {
+            margin-top: 24px;
+            display: none;
+        }
+        
+        #result {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container" class="container">
+        <div class="desc-title">菏泽插值服务页面</div>
+        <div class="type-div">
+            <label for="type">插值类型:</label>
+            <select id="type" class="select-div">
+          <option value="0" selected = "selected">历史数据</option>
+          <option value="1">重新插值</option>
+      </select>
+        </div>
+        <div id="time-interval">
+            <label for="interval">时间尺度:</label>
+            <select id="interval" class="select-div">
+            <option value="hour" selected = "selected">小时数据</option>
+            <option value="day">日数据</option>
+            <option value="month">月数据</option>
+        </select>
+        </div>
+        <div class="time-div">
+            <label for="start">开始时间:</label>
+            <input class="time" id="startTime" type="text" placeholder="请选择开始时间" readonly>
+        </div>
+        <div class="time-div">
+            <label for="end">结束时间:</label>
+            <input class="time" id="endTime" type="text" placeholder="请选择结束时间" readonly>
+        </div>
+        <div class="process">
+            <button id="submit" onclick="submit()">提交</button>
+            <button id="cancel" onclick="cancel()">取消</button>
+        </div>
+        <div class="status">
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        jeDate({
+            dateCell: "#startTime",
+            format: "YYYY-MM-DD hh:mm:ss",
+            isinitVal: true,
+            isTime: true, //isClear:false,
+            minDate: "2014-09-19 00:00:00",
+            // okfun:function(val){alert(val)}
+        });
+        jeDate({
+            dateCell: "#endTime",
+            format: "YYYY-MM-DD hh:mm:ss",
+            isinitVal: true,
+            isTime: true, //isClear:false,
+            minDate: "2014-09-19 00:00:00",
+            // okfun:function(val){alert(val)}
+        })
+
+        function submit() {
+            var type = $("#type option:selected").val();
+            var timeInterval = $("#interval option:selected").val();
+            var startTime = document.getElementById("startTime").value;
+            var endTime = document.getElementById("endTime").value;
+
+            $.ajax({
+                url: "/city-interpolation-server/public/interpolate/api/v1.0/do-interpolation",
+                type: "POST",
+                data: {
+                    "params": JSON.stringify({
+                        "type": type,
+                        "timeInterval": timeInterval,
+                        "startTime": startTime,
+                        "endTime": endTime
+                    })
+                },
+                dataType: 'text',
+                success: function(result) {
+                    console.log(result)
+                    document.getElementById("result").innerHTML = JSON.parse(result).msg;
+                    $(".status").css("display", "block");
+                },
+                error: function(error) {
+                    document.getElementById("result").innerHTML = JSON.stringify(error).msg;
+                    $(".status").css("display", "block");
+                }
+            })
+        }
+
+        function cancel() {
+            $(".status").css("display", "block");
+            document.getElementById("result").innerHTML = "你已取消操作";
+        }
+    </script>
+</body>
+
+</html>
