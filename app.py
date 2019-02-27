@@ -18,7 +18,7 @@ from history_month_data_task import do_month_task
 
 app = Flask(__name__)
 
-@app.route('/city-interpolation-server/public/interpolate/api/v1.0/do-interpolation', methods=['POST'])
+@app.route('/gdal-interpolation-server/public/interpolate/api/v1.0/do-interpolation', methods=['POST'])
 def do_interpolation():
     data = json.loads(request.form.get('params'))
     interpolation_type = data['type']
@@ -43,10 +43,10 @@ def do_interpolation():
         write_content(get_absolute_path('log'), log, mode = 'a')
         return json.dumps({"status": 0, "msg": str(msg)})
 
-@app.route('/city-interpolation-server/public/interpolate/api/v1.0/show-interpolation/<string:filename>', methods=['GET'])
-def show_photo(filename):
+@app.route('/gdal-interpolation-server/public/interpolate/api/v1.0/show-interpolation/<string:address>/<string:filename>', methods=['GET'])
+def show_photo(address, filename):
     try:
-        png_dir = os.path.join(base_dir, png_path)
+        png_dir = os.path.join(base_dir, png_path, address)
         if request.method == 'GET':
             if filename is None:
                 return make_response('<h2>传入的图片文件名为null!</h2>', 412)
@@ -75,7 +75,7 @@ def show_photo(filename):
         write_content(get_absolute_path('log'), log, mode = 'a')
         return make_response('<h2>请求插值图片异常!</h2>', 400)
 
-@app.route('/city-interpolation-server/public/interpolate/api/v1.0/index.do', methods=['GET', 'POST'])
+@app.route('/gdal-interpolation-server/public/interpolate/api/v1.0/index.do', methods=['GET', 'POST'])
 def index():
     return render_template('index.html')
 

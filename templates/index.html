@@ -2,7 +2,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>菏泽空间插值历史数据服务</title>
+    <title>全国空间插值历史数据服务</title>
     <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon" />
     <link rel="stylesheet" href="/static/js/skin/jedate.css">
     <script src="/static/js/jquery.min.js"></script>
@@ -68,7 +68,7 @@
 
 <body>
     <div id="container" class="container">
-        <div class="desc-title">菏泽插值服务页面</div>
+        <div class="desc-title">全国插值服务页面</div>
         <div class="type-div">
             <label for="type">插值类型:</label>
             <select id="type" class="select-div">
@@ -126,7 +126,7 @@
             var endTime = document.getElementById("endTime").value;
 
             $.ajax({
-                url: "/city-interpolation-server/public/interpolate/api/v1.0/do-interpolation",
+                url: "/gdal-interpolation-server/public/interpolate/api/v1.0/do-interpolation",
                 type: "POST",
                 data: {
                     "params": JSON.stringify({

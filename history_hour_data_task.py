@@ -21,8 +21,8 @@ from utils import format_file_name
 from utils import remove_files
 from utils import mkdir_if_not_exist_once
 
-str_start_time = '2018-12-18 00:00:00'
-str_end_time = '2018-12-19 10:00:00'
+str_start_time = '2018-12-27 13:00:00'
+str_end_time = '2018-12-27 23:00:00'
 
 def work(current_task_name, use_history_temp = False):
     structdata.start('hour', current_task_name, True, use_history_temp = use_history_temp)
@@ -62,9 +62,6 @@ def run_task(func, day=0, hour=0, min=0, second=0, start = None, end = None, use
         log.append(str(msg) + '\n')
         write_content(get_absolute_path('log'), log, 'a')
 
-def start():
-    run_task(work, hour = 1, use_history_temp = True)
-
 # 根据起止时间执行小时插值任务
 def do_hour_task(start_time, end_time, type = None, use_history_temp = False):
     if start_time is not None and end_time is not None:
@@ -75,6 +72,9 @@ def do_hour_task(start_time, end_time, type = None, use_history_temp = False):
             print('>>>>>>>>>>>小时插值任务:传入的时间有问题,结束时间应大于开始时间!')
     else:
         print('>>>>>>>>>>>小时插值任务:传入的开始或结束时间为None!')
+
+def start():
+    run_task(work, hour = 1, use_history_temp = True)
 
 if __name__=='__main__':
     mkdir_if_not_exist_once()

@@ -1,28 +1,12 @@
 # GDAL空间插值服务
-    城市空间插值服务，依赖python 3.x环境及GDAL包，实现从请求站点及小时/日/实时数据到反距离插值并生成插值结果png图片的完成流程。
-
-### 部署说明
-    本项目可用于部署所有城市的空间插值服务，注意以下问题：
-    1. 部署时需要环境变量中配置变量 city,代表当前部署的项目所属城市。目前包括的城市有：
-        ahsz：宿州
-        sdhz: 菏泽
-        sxyl：榆林
-        zjhz: 杭州
-        zjjx: 嘉兴
-        zjsx: 绍兴
-    2. 确保agms-server中包括提供站点GeoJSON和监测数据的接口，具体如下(山东菏泽例外，具体参考对应配置文件)：
-        站点：/agms/web/outside/v1/interpolation/stations
-        实时数据：/agms/web/outside/v1/interpolation/data
-        小时数据: /agms/web/outside/v1/interpolation/hour-data/{yyyy-mm-dd hh}
-        日数据: /agms/web/outside/v1/interpolation/day-data/{yyyy-mm-dd}
-        月数据: /agms/web/outside/v1/interpolation/month-data/{yyyy-mm}
+    GDAL空间插值服务，依赖python 3.x环境及GDAL包，实现从请求站点及小时/日/实时数据到反距离插值并生成插值结果png图片的完成流程。
 
 ### 本地运行项目
 
 1. 下载代码：
 
     ``` 
-        git@git.fpi-inc.site:product/public-products/city-interpolation-server.git
+        git@git.fpi-inc.site:product/public-products/gdal-interpolation-server.git
      ```
 
 2. 运行环境：
@@ -91,7 +75,7 @@
 
 6. 站点和监测数据请求路径
 
-    ``config.py``中的``station_url``表示站点请求url，现在设置的是全国所有的国控站点，``realdata_url、hourdata_url、daydata_url``分别表示国控站最新的数据、国控站小时数据和国控站日数据接口，它们分别应用于常规和历史的小时/日数据插值。  
+    ``config.py``中的``state_station_url``表示站点请求url，现在设置的是全国所有的国控站点，``state_hourdata_recent_url、state_hourdata_url、state_daydata_url``分别表示国控站最新的数据、国控站小时数据和国控站日数据接口，它们分别应用于常规和历史的小时/日数据插值。  
     
     针对其他区域的插值，若站点和监测数据请求路径发送变化，有两种处理方式：  
     （1）替换上述路径；  
@@ -233,7 +217,8 @@
 
 3. 当前时间的常规插值
 
-    运行```run_task.py```文件，目前小时数据的插值间隔为5分钟，在以下时间执行插值：``3, 8, 13, 18, 23, 28, 33, 38, 43, 48, 53, 58``，可根据需要进行配置，新生成的插值结果会将之前的覆盖。  
+    运行```run_task.py```文件，小时数据插值，设置在每小时的``50``分，  
 
-    日数据插值，设置在``1:40``，可根据日数据获取时间进行调整。
+    日数据插值，设置在``02:10``，可根据日数据获取时间进行调整，
+    月数据插值，设置在``每月第1天的 03:10``，可根据月数据获取时间进行调整。
 

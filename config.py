@@ -1,16 +1,12 @@
 #-*-coding=utf-8-*-
 '''
-Created on 2018年12月18日
+Created on 2018年11月27日
 
 @author: chao_qin
-@description: 山东菏泽GDAL空间插值配置信息
+@description: GDAL空间插值配置信息
 '''
 
 import os
-
-# 数据接口域名
-# domain = 'http://hzzhhb.net'
-domain = 'http://agms-server'
 
 # 颜色形式(rgb/16进制hex)
 rgb_color = False
@@ -18,32 +14,62 @@ rgb_color = False
 # 插值因子列表
 z_fields = ['aqi', 'no2', 'pm25', 'o3', 'pm10', 'co', 'so2']
 
-# 菏泽插值结果宽度和高度(3857)-像元大小约 500m
-width = 358
-height = 356
+# 全国插值结果宽度和高度(3857)
+width = 1091
+height = 800
 
-# 正常数据范围(左上、右下)
-# output_bounds = [114.8031, 35.860081, 116.4061, 34.554501]
-# 依据ESRI地图服务绘制边界数据范围
-output_bounds = [114.821949, 35.863343, 116.412863, 34.550288]
+# 插值结果输出范围(3857,左上、右下)
+output_bounds = [8176078.187514, 7086793.365356, 15036953.326737, 2056389.759979]
 
 # 出图模板文件名称
-export_png_template = 'sdhz.png'
+dict_template_name = {'state': '中国',
+                       'ah': '安徽',
+                       'bj': '北京',
+                       'cq': '重庆',
+                       'fj': '福建',
+                       'gd': '广东',
+                       'gs': '甘肃',
+                       'gx': '广西',
+                       'gz': '贵州',
+                       'ha': '河南',
+                       'hb': '湖北',
+                       'he': '河北',
+                       'hi': '海南',
+                       'hl': '黑龙',
+                       'hn': '湖南',
+                       'jl': '吉林',
+                       'js': '江苏',
+                       'jx': '江西',
+                       'ln': '辽宁',
+                       'nm': '内蒙',
+                       'nx': '宁夏',
+                       'qh': '青海',
+                       'sc': '四川',
+                       'sd': '山东',
+                       'sh': '上海',
+                       'sn': '陕西',
+                       'sx': '山西',
+                       'tj': '天津',
+                       'tw': '台湾',
+                       'xj': '新疆',
+                       'xz': '西藏',
+                       'yn': '云南',
+                       'zj': '浙江'}
 
-# 插值算法(点位多且分布均匀,不需平滑)
-grid_algorithm = 'invdist:power=2:smoothing=0:radius1=0.0:radius2=0.0:angle=0.0:max_points=0:min_points=0:nodata=0.0'
-# grid_algorithm = 'invdist:power=1.6:smoothing=0.0:radius1=0.0:radius2=0.0:angle=0.0:max_points=0:min_points=0:nodata=0.0'
+# 插值算法
+grid_algorithm = 'invdist:power=3.6:smoothing=0.2:radius1=0.0:radius2=0.0:angle=0.0:max_points=0:min_points=0:nodata=0.0'
+# grid_algorithm = 'invdist:power=2.0:smoothing=0.0:radius1=0.0:radius2=0.0:angle=0.0:max_points=0:min_points=0:nodata=0.0'
 
 # 请求数据url
-station_url = domain + '/agms/public/web/api/v1/interpolation/stations'
-# 实时数据
-realdata_url = domain + '/agms/public/web/api/v1/interpolation/hour-data/recent'
+state_station_url = 'http://yun.fpi-inc.site/fpi-basemap-server/api/v1/stations'
+# 小时最新数据
+state_hourdata_recent_url = 'http://yun.fpi-inc.site/scas/api/v1.0/stations/hour-data/recent'
 # 指定小时获取小时数据
-hourdata_url = domain + '/agms/public/web/api/v1/interpolation/hour-data/{yyyy-mm-dd hh}'
+state_hourdata_url = 'http://yun.fpi-inc.site/scas/api/v1.0/stations/hour-data/{yyyy-mm-dd hh}'
 # 指定日期获取日数据
-daydata_url = domain + '/agms/public/web/api/v1/interpolation/day-data/{yyyy-mm-dd}'
-# 指定日期获取月数据
-monthdata_url = domain + '/agms/public/web/api/v1/interpolation/month-data/{yyyy-mm}'
+state_daydata_url = 'http://yun.fpi-inc.site/scas/api/v1.0/stations/day-data/{yyyy-mm-dd}'
+# 制定日期获取月数据
+state_monthdata_url = 'http://yun.fpi-inc.site/scas/api/v1.0/stations/month-data/{yyyy-mm}'
 
 # 当前工作空间
 # base_dir = 'G:/InterpolationResult'

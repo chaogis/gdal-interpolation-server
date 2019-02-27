@@ -14,12 +14,11 @@ from datetime import datetime
 from datetime import timedelta
 import traceback
 
-from config import station_url
-from config import realdata_url
-from config import hourdata_url
-from config import daydata_url
-from config import monthdata_url
-from config import output_bounds
+from config import state_station_url
+from config import state_hourdata_recent_url
+from config import state_hourdata_url
+from config import state_daydata_url
+from config import state_monthdata_url
 
 from utils import get_absolute_path
 from utils import write_content
@@ -55,40 +54,39 @@ def get_url(time_interval = 'hour', current_task_name = None, history = False, s
         time_interval--- 时间尺度，real/hour/day/month
         current_task_name--- 当前任务名称
         history--- 是否为历史数据任务
-        sta_url--- 站点数据url
+        station_url--- 站点数据url
         data_url--- 监测数据url
     '''
 
     try:
         # 站点数据请求url
         if sta_url is not None:
-            local_station_url = sta_url
+            station_url = sta_url
         else:
-            local_station_url = station_url
+            station_url = state_station_url
 
         # 监测数据请求url
         if data_url is not None:
             local_data_url = data_url
         else:
-            if time_interval == 'real':
-                    local_data_url = realdata_url
-            elif time_interval == 'hour':
-                if current_task_name is not None:
-                    local_data_url = hourdata_url.replace('{yyyy-mm-dd hh}', datetime.strptime(current_task_name,'%Y%m%d%H').strftime('%Y-%m-%d %H'))
+            # 此处需补充real（实时插值）数据url
+            if time_interval == 'hour':
+                if history:
+                    local_data_url = state_hourdata_url.replace('{yyyy-mm-dd hh}', datetime.strptime(current_task_name,'%Y%m%d%H').strftime('%Y-%m-%d %H'))
                 else:
-                    local_data_url = hourdata_url.replace('{yyyy-mm-dd hh}', format_time('%Y-%m-%d %H'))
+                    local_data_url = state_hourdata_recent_url
             elif time_interval == 'day':
                 if current_task_name is not None:
-                    local_data_url = daydata_url.replace('{yyyy-mm-dd}', datetime.strptime(current_task_name,'%Y%m%d').strftime('%Y-%m-%d'))
+                    local_data_url = state_daydata_url.replace('{yyyy-mm-dd}', datetime.strptime(current_task_name,'%Y%m%d').strftime('%Y-%m-%d'))
                 else:
-                    local_data_url = daydata_url.replace('{yyyy-mm-dd}', format_yestoday('%Y-%m-%d'))
+                    local_data_url = state_daydata_url.replace('{yyyy-mm-dd}', format_yestoday('%Y-%m-%d'))
             elif time_interval == 'month':
                 if current_task_name is not None:
-                    local_data_url = monthdata_url.replace('{yyyy-mm}', datetime.strptime(current_task_name,'%Y%m').strftime('%Y-%m'))
+                    local_data_url = state_monthdata_url.replace('{yyyy-mm}', datetime.strptime(current_task_name,'%Y%m').strftime('%Y-%m'))
                 else:
-                    local_data_url = monthdata_url.replace('{yyyy-mm}', format_last_month('%Y-%m'))
+                    local_data_url = state_monthdata_url.replace('{yyyy-mm}', format_last_month('%Y-%m'))
 
-        return [local_station_url, local_data_url.replace(' ', '%20')]
+        return [station_url, local_data_url.replace(' ', '%20')]
     except Exception:
         log = []
         log.append('>>>>>>>>>>' + format_time() + ' [' + format_file_name(time_interval, current_task_name) + '] 获取站点和监测数据url异常:\n')
@@ -115,11 +113,9 @@ def struct_data(time_interval = 'hour', current_task_name = None, history = Fals
         entries = monitordatas['entries']
 
         for feature in features:
-            # 若输出范围为网络墨卡托投影坐标, 则将经纬度转网络墨卡托投影坐标
-            if output_bounds[0] > 180 and output_bounds[1] > 90:
-                coords = feature['geometry']['coordinates']
-                feature['geometry']['coordinates'] = lnglat_2_webmercator(coords[0], coords[1])
-
+            # 经纬度转网络墨卡托投影坐标
+            coords = feature['geometry']['coordinates']
+            feature['geometry']['coordinates'] = lnglat_2_webmercator(coords[0], coords[1])
             stationCode = feature['properties']['stationCode'].strip()
             for entry in entries:
                 MN = entry['MN'].strip()
@@ -175,7 +171,7 @@ def start(time_interval = 'hour', current_task_name = None, history = False, sta
         data_url--- 监测数据url
     '''
     write_structed_data(time_interval, current_task_name, history, station_url, data_url, use_history_temp)
-    print(u'<<<<<<<<<<<<<<<<<<<<<<1. 写入', get_des_by_time(time_interval), u'GeoJSON完成>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+    print(u'<<<<<<<<<<<<<<<<<<1. 写入', get_des_by_time(time_interval), u'GeoJSON完成: ' + format_time() + '>>>>>>>>>>>>>>>>>>>>>>>>')
 
 
     '''
@@ -183,6 +179,6 @@ def start(time_interval = 'hour', current_task_name = None, history = False, sta
     '''
 if __name__ =='__main__':
     print(u'>>>>>>>>>>>>数据预处理开始时间:', format_time(),'>>>>>>>>>>>>>>>>>>>>>>')
-    start('real')
+    start('month')
     print(u'>>>>>>>>>>>>数据预处理结束时间:', format_time(),'>>>>>>>>>>>>>>>>>>>>>>')
     print(u'>>>>>>>>>>>>数据预处理成功>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')

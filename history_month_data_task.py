@@ -63,10 +63,6 @@ def run_task(func, month=0, day=0, hour=0, min=0, second=0, start = None, end = 
         print(log)
         write_content(get_absolute_path('log'), log, 'a')
 
-def start():
-    run_task(work, month = 1, use_history_temp = True)
-
-
 # 根据起止时间执行月插值任务
 def do_month_task(start_time, end_time, type = None, use_history_temp = False):
     if start_time is not None and end_time is not None:
@@ -78,6 +74,8 @@ def do_month_task(start_time, end_time, type = None, use_history_temp = False):
     else:
         print('>>>>>>>>>>>月插值任务:传入的开始或结束时间为None!')
 
+def start():
+    run_task(work, month = 1, use_history_temp = True)
 
 if __name__=='__main__':
     mkdir_if_not_exist_once()

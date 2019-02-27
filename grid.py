@@ -58,7 +58,7 @@ def grid_option(factor_name, time_interval = 'hour', current_task_name = None):
                                 height = height,
                                 creationOptions = None,
                                 outputBounds = output_bounds,
-                                outputSRS = 'EPSG:4326' if output_bounds[0] < 180 and output_bounds[1] < 90 else 'EPSG:3857',
+                                outputSRS = 'EPSG:3857',
                                 noData = None,
                                 algorithm = grid_algorithm,
                                 layers = None,
@@ -109,16 +109,16 @@ def start(time_interval = 'hour', current_task_name = None, use_history_temp = F
     dataset = read_geojson(path, time_interval, current_task_name)
     for z_field in z_fields:
         grid_opt = grid_option(z_field, time_interval, current_task_name)
-        dest_name = get_absolute_path('tif', z_field, time_interval, current_task_name, use_history_temp)
+        dest_name = get_absolute_path('tif', z_field, time_interval, current_task_name, use_history_temp = use_history_temp)
         delete_if_exist(dest_name)
         do_grid(dest_name, dataset, grid_opt, time_interval, current_task_name)
-    print(u'<<<<<<<<<<<<<<<<<<<<<<<<<2. ' + get_des_by_time(time_interval) + u' GDAL空间插值完成>>>>>>>>>>>>>>>>>>>>>>>>>')
+    print(u'<<<<<<<<<<<<<<<<<<2. ' + get_des_by_time(time_interval) + u' GDAL空间插值完成:' + format_time() + '>>>>>>>>>>>>>>>>>>>>>>>>>')
     
 '''
     程序入口
 '''
 if __name__ =='__main__':
     print(u'>>>>>>>>>>>>>>>插值开始时间:', format_time(),'>>>>>>>>>>>>>>>>>>>>>>>>>')
-    start('real', '201812191641')
+    start('month')
     print(u'>>>>>>>>>>>>>>>插值结束时间:', format_time(),'>>>>>>>>>>>>>>>>>>>>>>>>>')
     print(u'>>>>>>>>>>>>>>>插值成功>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')

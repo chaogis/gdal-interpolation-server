@@ -21,7 +21,6 @@ from config import png_path
 from config import common_path
 from config import temp_path
 from config import log_path
-from config import export_png_template
 from config import hour_max_range
 from config import day_max_range
 from config import history_temp_path
@@ -124,15 +123,8 @@ def delete_if_exist(file_path):
 
     if os.path.exists(file_path):
         os.remove(file_path)
-
-def del_dir_if_exist(dir_path):
-    '''
-        文件夹若存在则删除
-        dir_path--- 待删除文件夹路径
-    '''
-
-    if os.path.exists(dir_path):
-        shutil.rmtree(dir_path)
+    # else:
+        # print u'>>>>>>>>>>文件', file_path, u'不存在！>>>>>>>>>>'
 
 def make_dir_if_not_exist(path):
     '''
@@ -205,7 +197,7 @@ def format_specify_month(iter_time, month_interval = 1):
     month = int(time_split[1])
     next_month = month + month_interval
 
-    # 后续年份
+   # 后续年份
     if next_month >= 13:
         year = year + next_month // 12
         next_month = next_month % 12
@@ -213,7 +205,7 @@ def format_specify_month(iter_time, month_interval = 1):
     elif next_month <= 0:
         year = year - (abs(next_month) // 12 + 1)
         next_month = 12 - abs(next_month) % 12
-
+    
     # 对二月份单独进行处理(若day >= 29,将其处理成28)
     day_time = time_split[2].split(' ')
     day = int(day_time[0])
@@ -237,23 +229,6 @@ def format_last_month(format = '%Y-%m', date = None):
     else:
         return format_specify_month(datetime.strptime(date,'%Y%m%d %H:%M:%S'), -1).strftime(format)
 
-def format_last_minute(format = '%Y%m%d%H%M', date = None):
-    '''
-        构造上一分钟的日期, 数据请求时使用, 默认YYYY-MM-DD %H:%M 形式
-        format--- 日期格式, 默认为 YYYY-MM-DD %H:%M 形式
-        date--- 给定日期, 字符串形式
-    '''
-    if date is None:
-        return (datetime.now() + timedelta(minutes=-1)).strftime(format)
-    else:
-        return (datetime.strptime(date,'%Y%m%d%H%M') + timedelta(minutes=-1)).strftime(format)
-
-def format_two_hour_ago(format = '%Y/%m/%d/%H'):
-    '''
-        构造2小时前的日期, 数据请求时使用, 默认YYYY-MM-DD %H:%M 形式
-        format--- 日期格式, 默认为 YYYY-MM-DD %H形式
-    '''
-    return (datetime.now() + timedelta(hours=-2)).strftime(format)
 
 def format_file_name(time_interval = 'hour', current_task_name = None):
     '''
@@ -271,7 +246,7 @@ def format_file_name(time_interval = 'hour', current_task_name = None):
         elif time_interval == 'month':
             return format_last_month('%Y%m')
         elif time_interval == 'real':
-            return format_last_minute('%Y%m%d%H%M')
+            return format_time('%Y%m%d%H%M')
 
 def format_png_path(time_interval, current_task_name = None):
     '''
@@ -288,18 +263,17 @@ def format_png_path(time_interval, current_task_name = None):
         elif time_interval == 'month':
             return datetime.strptime(current_task_name,'%Y%m').strftime('%Y/%m')
         elif time_interval == 'real':
-            return datetime.strptime(current_task_name,'%Y%m%d%H%M').strftime('%Y/%m/%d/%H')
+            return datetime.strptime(current_task_name,'%Y%m%d%H%M').strftime('%Y/%m/%d')
     else:
-        if time_interval == 'real':
-            return format_time('%Y/%m/%d/%H')
-        elif time_interval == 'hour':
+        # 待定实时插值结果的保存路径
+        if time_interval == 'hour' or time_interval == 'real':
             return format_time('%Y/%m/%d')
         elif time_interval == 'day':
             return format_yestoday('%Y/%m/%d')
         elif time_interval == 'month':
             return format_last_month('%Y/%m')
 
-def get_file_name(file_type, factor = 'aqi', time_interval = 'hour', current_task_name = None):
+def get_file_name(file_type, factor = 'aqi', time_interval = 'hour', current_task_name = None, template_name = 'state'):
     '''
         根据文件类型、因子名称、时间尺度、任务名称获取文件名, 文件名格式如下:
             2018111409.json
@@ -313,6 +287,7 @@ def get_file_name(file_type, factor = 'aqi', time_interval = 'hour', current_tas
         factor--- aqi, no2, pm25, o3, pm10, co, so2
         time_interval--- real, hour, day, month
         current_task_name--- 当前任务名称, 依次为 YYYYMMDDHHMM/YYYYMMDDHH/YYYYMMDD/YYYYMM 格式
+        template_name--- 模板名称
     '''
     file_name = format_file_name(time_interval, current_task_name) + '.' + file_type
     if file_type == 'png' or file_type == 'tif':
@@ -320,47 +295,46 @@ def get_file_name(file_type, factor = 'aqi', time_interval = 'hour', current_tas
     elif file_type == 'log':
         file_name = format_time('%Y%m%d') + '.' + file_type
     elif file_type == 'template':
-        file_name = export_png_template
+        file_name = template_name + '.png'
 
     return file_name
 
-def get_file_directory(type, time_interval = 'hour', current_task_name = None, use_history_temp = False):
+def get_file_directory(type, time_interval = 'hour', current_task_name = None, template_name = 'state', use_history_temp = False):
     '''
         获取文件目录
         type--- 文件类型
         time_interval--- 时间尺度
         current_task_name--- 任务名称
+        template_name--- 模板名称(确定存储目录)
     '''
-    relative_path = common_path
+    relative_path = temp_path
     if type == 'template':
         relative_path = common_path
     elif type == 'png':
-        relative_path = os.path.join(png_path, format_png_path(time_interval, current_task_name))
+        relative_path = os.path.join(png_path, template_name, format_png_path(time_interval, current_task_name))
     elif type == 'log':
         relative_path = log_path
     elif type == 'json' or type == 'tif':
         relative_path = temp_path if use_history_temp == False else history_temp_path
-    # 删除实时插值2小时之前的数据
-    elif type == 'del':
-        relative_path = os.path.join(png_path, format_two_hour_ago())
-
+    
     # 对png图片, 若路径不存在则创建之
     if type == 'png':
         make_dir_if_not_exist(os.path.join(base_dir, relative_path))
 
     return os.path.join(base_dir, relative_path)
 
-def get_absolute_path(file_type, factor = 'aqi', time_interval = 'hour', current_task_name = None, use_history_temp = False):
+def get_absolute_path(file_type, factor = 'aqi', time_interval = 'hour', current_task_name = None, template_name = 'state', use_history_temp = False):
     '''
         根据类型获取文件绝对路径
         file_type--- 文件类型
         factor--- 因子名称
         time_interval--- 时间尺度
         current_task_name--- 任务名称
+        template_name--- 模板名称(确定存储路径)
         use_history_temp--- 是否使用历史数据临时文件夹
     '''
-    file_dir = get_file_directory(file_type, time_interval, current_task_name, use_history_temp)
-    file_name = get_file_name(file_type, factor, time_interval, current_task_name)
+    file_dir = get_file_directory(file_type, time_interval, current_task_name, template_name, use_history_temp)
+    file_name = get_file_name(file_type, factor, time_interval, current_task_name, template_name)
     return os.path.join(file_dir, file_name)
 
 
@@ -387,7 +361,7 @@ def mkdir_if_not_exist_once():
     make_dir_if_not_exist(os.path.join(base_dir, log_path))
     make_dir_if_not_exist(os.path.join(base_dir, temp_path))
     make_dir_if_not_exist(os.path.join(base_dir, history_temp_path))
-    
+
 def kill_out_of_range_val(val, factor_name = 'aqi', time_interval = 'hour'):
     '''
         处理超限的监测值, 若超限则处理成最大值
@@ -419,7 +393,6 @@ def get_factor_max_val(factor_name = 'aqi', time_interval = 'hour'):
 
     return max_range[factor_name]
     
-
 def make_dir_by_date(str_date):
     if str_date is not None:
         if len(str_date) == 6:
